@@ -1,16 +1,17 @@
 import os
 import sys
 from typing import Tuple, Union
-
 import fire
+
 import torch
+
 from datasets import load_dataset
 from handler import DataHandler
 from peft import (
     LoraConfig,
     get_peft_model,
     get_peft_model_state_dict,
-    prepare_model_for_int8_training,
+    prepare_model_for_kbit_training,
 )
 from transformers import (
     AutoModelForCausalLM,
@@ -21,7 +22,6 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
-
 
 def main(
     model: str, # e.g. "decapoda-research/llama-7b-hf"
@@ -130,6 +130,7 @@ def main(
         The model layer to wrap for fsdp. Default is "LlamaDecoderLayer".
     **kwargs:
         additional arguments passed to the transformers.TrainingArguments"""
+
     # adapt arguments
     model_name = model
     world_size = int(os.environ.get("WORLD_SIZE", 1))
@@ -174,9 +175,9 @@ def main(
         torch_dtype=torch.float16 if any([use_lora, bf16]) else torch.float32,
         device_map=device_map,
     )
-
+    
     if train_in_8bit:
-        model = prepare_model_for_int8_training(model)
+        model = prepare_model_for_kbit_training(model)
 
     if use_lora:
         lora_config = LoraConfig(
@@ -186,10 +187,14 @@ def main(
             lora_dropout=lora_dropout,
             bias="none",
             task_type="CAUSAL_LM",
+            inference_mode=False,
+            # Add these new parameters
+            #init_lora_weights=True,
+            #use_rslora=True,
         )
         model = get_peft_model(model, lora_config)
         model.print_trainable_parameters()
-
+    
     # init tokenizer and tokenize function
     if "llama" in model_name.lower():
         tokenizer = LlamaTokenizer.from_pretrained(model_name)
@@ -241,7 +246,7 @@ def main(
         output_dir=output_dir,
         save_total_limit=save_total_limit,
         load_best_model_at_end=True if val_set_size > 0 else False,
-        ddp_find_unused_parameters=False if ddp else None,
+        ddp_find_unused_parameters=False, # if ddp else None, # NEW
         group_by_length=group_by_length,
         report_to="wandb" if use_wandb else None,
         run_name=wandb_run_name if use_wandb else None,
@@ -272,8 +277,8 @@ def main(
             lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())
         ).__get__(model, type(model))
 
-    if torch.__version__ >= "2" and sys.platform != "win32":
-        model = torch.compile(model)
+    #if torch.__version__ >= "2" and sys.platform != "win32":
+    #    model = torch.compile(model)
 
     # finally, train
     trainer.train()
