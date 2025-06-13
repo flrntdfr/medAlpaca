@@ -1,3 +1,7 @@
+# Reproducibility
+.direnv/
+.venv/
+
 # experimental notebooks
 *.ipynb 
 
