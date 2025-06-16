@@ -1,7 +1,14 @@
 
 <h1 align="center">Reproducible medAlpaca</h1>
 <p align="center">This is a fork of the medAlpaca project with a focus on reproducibility.</p>
-<br><br><br>
+<p align="center">
+  <a href="https://github.com/flrntdfr/medAlpaca/actions/workflows/docker-build.yaml">
+    <img src="https://github.com/flrntdfr/medAlpaca/actions/workflows/docker-build.yaml/badge.svg" alt="Build and Push Docker Image">
+  </a>
+</p>
+<br>
+<hr>
+<br>
 
 ![medalpaca](https://user-images.githubusercontent.com/37253540/228315829-b22f793c-2dcd-4c03-a32d-43720085a7de.png)
 
