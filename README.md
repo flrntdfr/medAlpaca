@@ -3,7 +3,7 @@
 <p align="center">This is a fork of the medAlpaca project with a focus on reproducibility.</p>
 <p align="center">
   <a href="https://github.com/flrntdfr/medAlpaca/actions/workflows/docker-build.yaml">
-    <img src="https://github.com/flrntdfr/medAlpaca/actions/workflows/docker-build.yaml/badge.svg" alt="Build and Push Docker Image">
+    <img src="https://github.com/flrntdfr/medAlpaca/actions/workflows/docker-build.yaml/badge.svg?branch=reproducible" alt="Build and Push Docker Image">
   </a>
 </p>
 <br>
