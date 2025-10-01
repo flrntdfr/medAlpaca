@@ -1,6 +1,7 @@
 # Reproducibility
 .direnv/
 .venv/
+.wandb_api_key
 
 # experimental notebooks
 *.ipynb 
