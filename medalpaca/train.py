@@ -277,8 +277,8 @@ def main(
             lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())
         ).__get__(model, type(model))
 
-    #if torch.__version__ >= "2" and sys.platform != "win32":
-    #    model = torch.compile(model)
+    if torch.__version__ >= "2" and sys.platform != "win32":
+       model = torch.compile(model)
 
     # finally, train
     trainer.train()
