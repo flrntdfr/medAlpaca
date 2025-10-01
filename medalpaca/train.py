@@ -2,6 +2,8 @@ import os
 import sys
 from typing import Tuple, Union
 import fire
+import random
+import numpy as np
 
 import torch
 
@@ -22,6 +24,9 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
+
+# Seed for reproducibility
+SEED = 54940
 
 def main(
     model: str, # e.g. "decapoda-research/llama-7b-hf"
@@ -131,6 +136,12 @@ def main(
     **kwargs:
         additional arguments passed to the transformers.TrainingArguments"""
 
+    # Set seeds for reproducibility
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed_all(SEED)
+
     # adapt arguments
     model_name = model
     world_size = int(os.environ.get("WORLD_SIZE", 1))
@@ -215,11 +226,11 @@ def main(
     if val_set_size > 0:
         data = (
             data["train"]
-            .train_test_split(test_size=val_set_size, shuffle=True, seed=42)
+            .train_test_split(test_size=val_set_size, shuffle=True, seed=SEED)
             .map(data_handler.generate_and_tokenize_prompt)
         )
     else:
-        data = data.shuffle(seed=42).map(data_handler.generate_and_tokenize_prompt)
+        data = data.shuffle(seed=SEED).map(data_handler.generate_and_tokenize_prompt)
 
     if not ddp and torch.cuda.device_count() > 1:
         # keeps Trainer from trying its own DataParallelism when more than 1 gpu is available
@@ -278,7 +289,7 @@ def main(
         ).__get__(model, type(model))
 
     if torch.__version__ >= "2" and sys.platform != "win32":
-       model = torch.compile(model)
+        model = torch.compile(model)
 
     # finally, train
     trainer.train()
