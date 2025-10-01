@@ -141,6 +141,10 @@ def main(
     np.random.seed(SEED)
     torch.manual_seed(SEED)
     torch.cuda.manual_seed_all(SEED)
+    
+    # Ensure deterministic behavior for fair GPU comparison
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
     # adapt arguments
     model_name = model
@@ -263,6 +267,7 @@ def main(
         run_name=wandb_run_name if use_wandb else None,
         fsdp=fsdp,
         fsdp_transformer_layer_cls_to_wrap=fsdp_transformer_layer_cls_to_wrap,
+        data_seed=SEED,  # Ensure deterministic DataLoader for reproducible batch ordering
         **kwargs
     )
 
