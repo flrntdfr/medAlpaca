@@ -246,7 +246,7 @@ def main(
         output_dir=output_dir,
         save_total_limit=save_total_limit,
         load_best_model_at_end=True if val_set_size > 0 else False,
-        ddp_find_unused_parameters=False, # if ddp else None, # NEW
+        ddp_find_unused_parameters=False if ddp else None,
         group_by_length=group_by_length,
         report_to="wandb" if use_wandb else None,
         run_name=wandb_run_name if use_wandb else None,
