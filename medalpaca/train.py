@@ -1,11 +1,12 @@
 import os
 import sys
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 import fire
 import random
 import numpy as np
 
 import torch
+import wandb
 
 from datasets import load_dataset
 from handler import DataHandler
@@ -53,6 +54,8 @@ def main(
     wandb_run_name: str = "test",
     use_wandb: bool = False,
     wandb_project: str = "medalpaca",
+    wandb_tags: Union[str, List[str]] = None,
+    wandb_notes: str = None,
     optim: str = "adamw_torch",
     lr_scheduler_type: str = "cosine",
     fp16: bool = True,
@@ -116,6 +119,10 @@ def main(
         Whether to use Weights & Biases for logging. Default is False.
     wandb_project (str, optional):
         The Weights & Biases project name. Default is "medalpaca".
+    wandb_tags (Union[str, List[str]], optional):
+        Tags to be added to the Weights & Biases run. Can be a comma-separated string or list of strings. Default is None.
+    wandb_notes (str, optional):
+        Notes to be added to the Weights & Biases run. Default is None.
     optim (str, optional):
         The optimizer to use. Default is "adamw_torch".
     lr_scheduler_type (str, optional):
@@ -160,8 +167,25 @@ def main(
     else:
         fsdp, fsdp_transformer_layer_cls_to_wrap = "", None
 
-    if len(wandb_project) > 0:
-        os.environ["WANDB_PROJECT"] = wandb_project
+    # Initialize wandb with tags if use_wandb is True
+    if use_wandb:
+        # Parse wandb_tags - handle both string and list formats
+        tags_list = []
+        if wandb_tags:
+            if isinstance(wandb_tags, str):
+                # Split comma-separated string into list
+                tags_list = [tag.strip() for tag in wandb_tags.split(',') if tag.strip()]
+            elif isinstance(wandb_tags, list):
+                tags_list = [str(tag).strip() for tag in wandb_tags if str(tag).strip()]
+        
+        # Initialize wandb run with tags and notes
+        # The TrainingArguments with report_to="wandb" will handle the actual logging
+        wandb.init(
+            project=wandb_project,
+            name=wandb_run_name,
+            tags=tags_list,
+            notes=wandb_notes,
+        )
 
     # perform some checks, to raise errors early
     if fp16 and bf16:
@@ -255,12 +279,13 @@ def main(
         optim=optim,
         lr_scheduler_type=lr_scheduler_type,
         evaluation_strategy="steps" if val_set_size > 0 else "no",
-        save_strategy="steps",
+        save_strategy="no", # ← Do not save checkpoints for the benchmark
         eval_steps=eval_steps if val_set_size > 0 else None,
         save_steps=eval_steps,
         output_dir=output_dir,
         save_total_limit=save_total_limit,
-        load_best_model_at_end=True if val_set_size > 0 else False,
+        #load_best_model_at_end=True if val_set_size > 0 else False,
+        load_best_model_at_end=False, # ← Do not load the best model for the benchmark
         ddp_find_unused_parameters=False if ddp else None,
         group_by_length=group_by_length,
         report_to="wandb" if use_wandb else None,
@@ -299,7 +324,7 @@ def main(
     # finally, train
     trainer.train()
 
-    model.save_pretrained(output_dir)
+    #model.save_pretrained(output_dir) # ← Do not save the model for the benchmark
 
 
 if __name__ == "__main__":
