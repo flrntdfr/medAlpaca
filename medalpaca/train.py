@@ -33,7 +33,7 @@ def main(
     model: str, # e.g. "decapoda-research/llama-7b-hf"
     val_set_size: Union[int, float] = 0.1,
     prompt_template: str = "prompts/medalpaca.json",
-    model_max_length: int = 256,  # should not exceed 2048, as LLaMA is trained with this
+    model_max_length: int = 256,   # should not exceed 2048, as LLaMA is trained with this
     train_on_inputs: bool = True,  # if False, masks out inputs in loss
     data_path: str = "medical_meadow_small.json",
     train_in_8bit: bool = True,
@@ -153,7 +153,7 @@ def main(
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    # adapt arguments
+    # Adapt arguments
     model_name = model
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
@@ -233,6 +233,12 @@ def main(
         )
         model = get_peft_model(model, lora_config)
         model.print_trainable_parameters()
+        
+        # Explicitly disable gradient checkpointing for LoRA to prevent DDP conflicts
+        if hasattr(model, 'gradient_checkpointing_enable'):
+            model.gradient_checkpointing_disable()
+        if hasattr(model.config, 'use_gradient_checkpointing'):
+            model.config.use_gradient_checkpointing = False
     
     # init tokenizer and tokenize function
     if "llama" in model_name.lower():
@@ -279,13 +285,13 @@ def main(
         optim=optim,
         lr_scheduler_type=lr_scheduler_type,
         evaluation_strategy="steps" if val_set_size > 0 else "no",
-        save_strategy="no", # ← Do not save checkpoints for the benchmark
+        save_strategy="no", # Do not save checkpoints for the benchmark
         eval_steps=eval_steps if val_set_size > 0 else None,
         save_steps=eval_steps,
         output_dir=output_dir,
         save_total_limit=save_total_limit,
         #load_best_model_at_end=True if val_set_size > 0 else False,
-        load_best_model_at_end=False, # ← Do not load the best model for the benchmark
+        load_best_model_at_end=False, # Do not load the best model for the benchmark
         ddp_find_unused_parameters=False if ddp else None,
         group_by_length=group_by_length,
         report_to="wandb" if use_wandb else None,
@@ -324,8 +330,7 @@ def main(
     # finally, train
     trainer.train()
 
-    #model.save_pretrained(output_dir) # ← Do not save the model for the benchmark
-
+    #model.save_pretrained(output_dir) # Commented for benchmarks
 
 if __name__ == "__main__":
     fire.Fire(main)
