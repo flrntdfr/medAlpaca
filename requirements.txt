@@ -4,6 +4,7 @@ bitsandbytes==0.45.2
 black[jupyter]==25.1.0
 black==25.1.0
 datasets==2.14.6
+fastDP @ git+https://github.com/awslabs/fast-differential-privacy.git@v2.1
 fire==0.7.0
 gradio==4.44.1
 importlib_metadata==8.6.1
